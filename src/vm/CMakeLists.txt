@@ -167,9 +167,11 @@ set(VM_SOURCES_WKS
     eventpipe.cpp
     eventpipeconfiguration.cpp
     eventpipeevent.cpp
+    eventpipefile.cpp
     eventpipejsonfile.cpp
     eventpipeprovider.cpp
     eventstore.cpp
+    fastserializer.cpp
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp

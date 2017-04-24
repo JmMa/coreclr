@@ -6,6 +6,7 @@
 #include "eventpipe.h"
 #include "eventpipeconfiguration.h"
 #include "eventpipeevent.h"
+#include "eventpipefile.h"
 #include "eventpipeprovider.h"
 #include "eventpipejsonfile.h"
 #include "sampleprofiler.h"
@@ -18,6 +19,7 @@ CrstStatic EventPipe::s_configCrst;
 bool EventPipe::s_tracingInitialized = false;
 bool EventPipe::s_tracingEnabled = false;
 EventPipeConfiguration* EventPipe::s_pConfig = NULL;
+EventPipeFile* EventPipe::s_pFile = NULL;
 EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
 
 void EventPipe::Initialize()
@@ -81,6 +83,12 @@ void EventPipe::Enable()
 
     // Set the bit that actually enables tracing.
     s_tracingEnabled = true;
+
+    // Create the event pipe file.
+    SString eventPipeFileOutputPath;
+    eventPipeFileOutputPath.Printf("Process-%d.netperf", GetCurrentProcessId());
+    s_pFile = new EventPipeFile(eventPipeFileOutputPath);
+
     if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) == 2)
     {
         // File placed in current working directory.
@@ -145,6 +153,13 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, size_t length)
         return;
     }
 
+    Thread *pThread = GetThread();
+    _ASSERTE(pThread != NULL);
+
+    // Populate common event fields.
+    CommonEventFields eventFields;
+    PopulateCommonEventFields(eventFields, pThread);
+
     // Walk the stack if requested.
     StackContents stackContents;
     bool stackWalkSucceeded = false;
@@ -154,29 +169,11 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, size_t length)
         stackWalkSucceeded = WalkManagedStackForCurrentThread(stackContents);
     }
 
-    EX_TRY
-    {
-        if(s_pJsonFile != NULL)
-        {
-            Thread *pThread = GetThread();
+    // Write to the EventPipeFile if it exists.
+    WriteToFile(event, eventFields, stackContents, pData, length);
 
-            CommonEventFields eventFields;
-            PopulateCommonEventFields(eventFields, pThread);
-
-            const unsigned int guidSize = 39;
-            WCHAR wszProviderID[guidSize];
-            if(!StringFromGUID2(event.GetProvider()->GetProviderID(), wszProviderID, guidSize))
-            {
-                wszProviderID[0] = '\0';
-            }
-            memmove(wszProviderID, &wszProviderID[1], guidSize-3);
-            wszProviderID[guidSize-3] = '\0';
-            SString message;
-            message.Printf("Provider=%S/EventID=%d/Version=%d", wszProviderID, event.GetEventID(), event.GetEventVersion());
-            s_pJsonFile->WriteEvent(eventFields, message, stackContents);
-        }
-    }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    // Write to the EventPipeJsonFile if it exists.
+    WriteToJsonFile(event, eventFields, stackContents);
 }
 
 void EventPipe::WriteSampleProfileEvent(Thread *pThread, StackContents &stackContents)
@@ -303,4 +300,57 @@ CrstStatic* EventPipe::GetLock()
     LIMITED_METHOD_CONTRACT;
 
     return &s_configCrst;
+}
+
+void EventPipe::WriteToFile(EventPipeEvent &event, CommonEventFields &eventFields, StackContents &stackContents, BYTE *pData, size_t length)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(s_pFile == NULL)
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
+void EventPipe::WriteToJsonFile(EventPipeEvent &event, CommonEventFields &eventFields, StackContents &stackContents)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(s_pJsonFile == NULL)
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        const unsigned int guidSize = 39;
+        WCHAR wszProviderID[guidSize];
+        if(!StringFromGUID2(event.GetProvider()->GetProviderID(), wszProviderID, guidSize))
+        {
+            wszProviderID[0] = '\0';
+        }
+        memmove(wszProviderID, &wszProviderID[1], guidSize-3);
+        wszProviderID[guidSize-3] = '\0';
+        SString message;
+        message.Printf("Provider=%S/EventID=%d/Version=%d", wszProviderID, event.GetEventID(), event.GetEventVersion());
+        s_pJsonFile->WriteEvent(eventFields, message, stackContents);
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
