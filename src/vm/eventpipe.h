@@ -170,7 +170,6 @@ class EventPipe
 
         static CrstStatic s_configCrst;
         static bool s_tracingInitialized;
-        static bool s_tracingEnabled;
         static EventPipeConfiguration *s_pConfig;
         static EventPipeFile *s_pFile;
         static EventPipeJsonFile *s_pJsonFile;
