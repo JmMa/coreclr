@@ -21,8 +21,10 @@ EventPipeProvider::EventPipeProvider(const GUID &providerID)
     m_providerID = providerID;
     m_enabled = false;
     m_keywords = 0;
-    m_providerLevel = Critical;
+    m_providerLevel = EventPipeEventLevel::Critical;
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
+    m_pCallbackFunction = NULL;
+    m_pCallbackData = NULL;
 
     // Register the provider.
     EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
@@ -63,7 +65,7 @@ bool EventPipeProvider::EventEnabled(INT64 keywords, EventPipeEventLevel eventLe
     //  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
     //  - The event level is LogAlways or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
     return (EventEnabled(keywords) &&
-        ((eventLevel == LogAlways) || (m_providerLevel >= eventLevel)));
+        ((eventLevel == EventPipeEventLevel::LogAlways) || (m_providerLevel >= eventLevel)));
 }
 
 void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel)
@@ -82,6 +84,7 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     m_providerLevel = providerLevel;
 
     RefreshAllEvents();
+    InvokeCallback();
 }
 
 void EventPipeProvider::AddEvent(EventPipeEvent &event)
@@ -98,6 +101,70 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     CrstHolder _crst(EventPipe::GetLock());
 
     m_pEventList->InsertTail(new SListElem<EventPipeEvent*>(&event));
+}
+
+void EventPipeProvider::RegisterCallback(EventPipeCallback pCallbackFunction, void *pData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Take the config lock before setting the callback.
+    CrstHolder _crst(EventPipe::GetLock());
+
+    if(m_pCallbackFunction == NULL)
+    {
+        m_pCallbackFunction = pCallbackFunction;
+        m_pCallbackData = pData;
+    }
+}
+
+void EventPipeProvider::UnregisterCallback(EventPipeCallback pCallbackFunction)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Take the config lock before setting the callback.
+    CrstHolder _crst(EventPipe::GetLock());
+
+    if(m_pCallbackFunction == pCallbackFunction)
+    {
+        m_pCallbackFunction = NULL;
+        m_pCallbackData = NULL;
+    }
+}
+
+void EventPipeProvider::InvokeCallback()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    if(m_pCallbackFunction != NULL)
+    {
+        (*m_pCallbackFunction)(
+            &m_providerID,
+            m_enabled,
+            (UCHAR) m_providerLevel,
+            m_keywords,
+            0 /* matchAllKeywords */,
+            NULL /* FilterData */,
+            m_pCallbackData /* CallbackContext */);
+    }
 }
 
 void EventPipeProvider::RefreshAllEvents()
