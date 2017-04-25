@@ -7,6 +7,8 @@
 
 #include "fstream.h"
 
+class FastSerializer;
+
 enum class FastSerializerTags : BYTE 
 {
     Error,              // To improve debugabilty, 0 is an illegal tag.  
@@ -26,12 +28,17 @@ enum class FastSerializerTags : BYTE
     Limit,              // Just past the last valid tag, used for asserts.  
 };
 
+// Callback used to allow the serializer to ask objects to serialize themselves.
+typedef void (*FastSerializerCallback)(FastSerializer *pSerializer, void *pObject);
+
 class FastSerializer
 {
 public:
 
     FastSerializer(SString &outputFilePath);
     ~FastSerializer();
+
+    void WriteObject(FastSerializerCallback pCallback, void *pObject);
 
 private:
 

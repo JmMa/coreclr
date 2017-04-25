@@ -45,6 +45,26 @@ FastSerializer::~FastSerializer()
     }
 }
 
+void FastSerializer::WriteObject(FastSerializerCallback pCallback, void *pObject)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pCallback != NULL);
+        PRECONDITION(pObject != NULL);
+    }
+    CONTRACTL_END;
+
+    // TODO: Write object begin tag.
+
+    // Ask the object to serialize itself using the current serializer.
+    (*pCallback)(this, pObject);
+
+    // TODO: Write object end tag.
+}
+
 void FastSerializer::WriteFileHeader()
 {
     CONTRACTL
