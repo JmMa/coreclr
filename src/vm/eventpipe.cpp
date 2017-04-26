@@ -32,7 +32,7 @@ void EventPipe::Initialize()
 
     s_tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
-        (CrstFlags)(CRST_TAKEN_DURING_SHUTDOWN));
+        (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
     s_pConfig = new EventPipeConfiguration();
 
@@ -164,13 +164,12 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, size_t length)
         return;
     }
 
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread != NULL);
+    DWORD threadID = GetCurrentThreadId();
 
     // Create an instance of the event.
     EventPipeEventInstance instance(
         event,
-        pThread,
+        threadID,
         pData,
         length);
 

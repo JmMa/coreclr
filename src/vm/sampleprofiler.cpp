@@ -10,6 +10,8 @@
 
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
+EventPipeProvider* SampleProfiler::s_pEventPipeProvider = NULL;
+EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
 #ifdef FEATURE_PAL
 long SampleProfiler::s_samplingRateInNs = 1000000; // 1ms
@@ -27,6 +29,18 @@ void SampleProfiler::Enable()
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
+
+    if(s_pEventPipeProvider == NULL)
+    {
+        s_pEventPipeProvider = new EventPipeProvider({0});
+        s_pThreadTimeEvent = new EventPipeEvent(
+            *s_pEventPipeProvider,
+            0, /* keywords */
+            0, /* eventID */
+            0, /* eventVersion */
+            EventPipeEventLevel::Informational,
+            false /* NeedStack */);
+    }
 
     s_profilingEnabled = true;
     s_pSamplingThread = SetupUnstartedThread();

@@ -6,10 +6,11 @@
 #include "eventpipeeventinstance.h"
 #include "eventpipejsonfile.h"
 #include "fastserializer.h"
+#include "sampleprofiler.h"
 
 EventPipeEventInstance::EventPipeEventInstance(
     EventPipeEvent &event,
-    Thread *pThread,
+    DWORD threadID,
     BYTE *pData,
     size_t length)
 {
@@ -18,12 +19,11 @@ EventPipeEventInstance::EventPipeEventInstance(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
     m_pEvent = &event;
-    m_pThread = pThread;
+    m_threadID = threadID;
     m_pData = pData;
     m_dataLength = length;
     QueryPerformanceCounter(&m_timeStamp);
@@ -97,21 +97,13 @@ void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)
         wszProviderID[guidSize-3] = '\0';
         SString message;
         message.Printf("Provider=%S/EventID=%d/Version=%d", wszProviderID, m_pEvent->GetEventID(), m_pEvent->GetEventVersion());
-        pFile->WriteEvent(m_timeStamp, m_pThread->GetOSThreadId(), message, m_stackContents);
+        pFile->WriteEvent(m_timeStamp, m_threadID, message, m_stackContents);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-EventPipeEvent* SampleProfilerEventInstance::s_pEvent = new EventPipeEvent(
-    *(new EventPipeProvider({0})),
-    0, /* keywords */
-    0, /* eventID */
-    0, /* eventVersion */
-    EventPipeEventLevel::Informational,
-    false /* NeedStack */);
-
 SampleProfilerEventInstance::SampleProfilerEventInstance(Thread *pThread)
-    :EventPipeEventInstance(*s_pEvent, pThread, NULL, 0)
+    :EventPipeEventInstance(*SampleProfiler::s_pThreadTimeEvent, pThread->GetOSThreadId(), NULL, 0)
 {
     LIMITED_METHOD_CONTRACT;
 }

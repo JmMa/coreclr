@@ -14,7 +14,7 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeEvent &event, Thread *pThread, BYTE *pData, size_t length);
+    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, size_t length);
 
     // Get the stack contents object to either read or write to it.
     StackContents* GetStack();
@@ -31,7 +31,7 @@ public:
 protected:
 
     EventPipeEvent *m_pEvent;
-    Thread *m_pThread;
+    DWORD m_threadID;
     LARGE_INTEGER m_timeStamp;
 
     BYTE *m_pData;
@@ -44,10 +44,6 @@ protected:
 // to threads other than the current thread.
 class SampleProfilerEventInstance : public EventPipeEventInstance
 {
-
-private:
-
-    static EventPipeEvent* s_pEvent;
 
 public:
 
