@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+#include "eventpipeeventinstance.h"
 #include "sampleprofiler.h"
 #include "hosting.h"
 #include "threadsuspend.h"
@@ -142,16 +143,18 @@ void SampleProfiler::WalkManagedThreads()
     CONTRACTL_END;
 
     Thread *pThread = NULL;
-    StackContents stackContents;
 
     // Iterate over all managed threads.
     // Assumes that the ThreadStoreLock is held because we've suspended all threads.
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
+        SampleProfilerEventInstance instance(pThread);
+        StackContents &stackContents = *(instance.GetStack());
+
         // Walk the stack and write it out as an event.
         if(EventPipe::WalkManagedStackForThread(pThread, stackContents) && !stackContents.IsEmpty())
         {
-            EventPipe::WriteSampleProfileEvent(pThread, stackContents);
+            EventPipe::WriteSampleProfileEvent(instance);
         }
     }
 }

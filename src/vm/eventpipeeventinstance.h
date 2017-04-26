@@ -25,17 +25,33 @@ public:
     // Called from the static Serialize method to do the actual work.
     void Serialize(FastSerializer *pSerializer);
 
-private:
+    // Serialize this event to the JSON file.
+    void SerializeToJsonFile(EventPipeJsonFile *pFile);
+
+protected:
 
     EventPipeEvent *m_pEvent;
     Thread *m_pThread;
-    LARGE_INTEGER m_pTimeStamp;
+    LARGE_INTEGER m_timeStamp;
 
     BYTE *m_pData;
     size_t m_dataLength;
     StackContents m_stackContents;
 };
 
+// A specific type of event instance for use by the SampleProfiler.
+// This is needed because the SampleProfiler knows how to walk stacks belonging
+// to threads other than the current thread.
+class SampleProfilerEventInstance : public EventPipeEventInstance
+{
+
+private:
+
+    static EventPipeEvent* s_pEvent;
+
+public:
+
+    SampleProfilerEventInstance(Thread *pThread);
+};
+
 #endif // __EVENTPIPE_EVENTINSTANCE_H__
-
-

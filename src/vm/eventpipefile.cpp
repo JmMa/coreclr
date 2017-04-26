@@ -36,7 +36,7 @@ EventPipeFile::~EventPipeFile()
     }
 }
 
-void EventPipeFile::WriteEvent(EventPipeEvent &event, CommonEventFields &commonFields, BYTE *pData, size_t length, StackContents *pStackContents)
+void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
 {
     CONTRACTL
     {

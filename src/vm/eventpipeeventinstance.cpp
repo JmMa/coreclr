@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "eventpipeeventinstance.h"
+#include "eventpipejsonfile.h"
 #include "fastserializer.h"
 
 EventPipeEventInstance::EventPipeEventInstance(
@@ -25,6 +26,12 @@ EventPipeEventInstance::EventPipeEventInstance(
     m_pThread = pThread;
     m_pData = pData;
     m_dataLength = length;
+    QueryPerformanceCounter(&m_timeStamp);
+
+    if(event.NeedStack())
+    {
+        EventPipe::WalkManagedStackForCurrentThread(m_stackContents);
+    }
 }
 
 StackContents* EventPipeEventInstance::GetStack()
@@ -61,4 +68,50 @@ void EventPipeEventInstance::Serialize(FastSerializer *pSerializer)
     CONTRACTL_END;
 
     // TODO: Serialize the event using the serializer.
+}
+
+void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(pFile == NULL)
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        const unsigned int guidSize = 39;
+        WCHAR wszProviderID[guidSize];
+        if(!StringFromGUID2(m_pEvent->GetProvider()->GetProviderID(), wszProviderID, guidSize))
+        {
+            wszProviderID[0] = '\0';
+        }
+        memmove(wszProviderID, &wszProviderID[1], guidSize-3);
+        wszProviderID[guidSize-3] = '\0';
+        SString message;
+        message.Printf("Provider=%S/EventID=%d/Version=%d", wszProviderID, m_pEvent->GetEventID(), m_pEvent->GetEventVersion());
+        pFile->WriteEvent(m_timeStamp, m_pThread->GetOSThreadId(), message, m_stackContents);
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
+EventPipeEvent* SampleProfilerEventInstance::s_pEvent = new EventPipeEvent(
+    *(new EventPipeProvider({0})),
+    0, /* keywords */
+    0, /* eventID */
+    0, /* eventVersion */
+    EventPipeEventLevel::Informational,
+    false /* NeedStack */);
+
+SampleProfilerEventInstance::SampleProfilerEventInstance(Thread *pThread)
+    :EventPipeEventInstance(*s_pEvent, pThread, NULL, 0)
+{
+    LIMITED_METHOD_CONTRACT;
 }

@@ -7,6 +7,7 @@
 #define __EVENTPIPE_FILE_H__
 
 #include "eventpipe.h"
+#include "eventpipeeventinstance.h"
 #include "fastserializer.h"
 
 class EventPipeFile
@@ -16,7 +17,7 @@ class EventPipeFile
         ~EventPipeFile();
 
         // Write an event to the file.
-        void WriteEvent(EventPipeEvent &event, CommonEventFields &commonFields, BYTE *pData, size_t length, StackContents *pStackContents);
+        void WriteEvent(EventPipeEventInstance &instance);
 
     private:
         // The object responsible for serialization.
