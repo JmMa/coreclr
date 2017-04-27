@@ -15,8 +15,13 @@ EventPipeFile::EventPipeFile(SString &outputFilePath)
     }
     CONTRACTL_END;
 
-    m_pSerializer = new FastSerializer(outputFilePath);
+    m_pSerializer = new FastSerializer(outputFilePath, *this);
     QueryPerformanceCounter(&m_fileOpenTimeStamp);
+    m_eventsWritten = 0;
+
+    // Reserve enough space to write the event count.
+    m_eventsWrittenStreamLabel = m_pSerializer->GetStreamLabel();
+    m_pSerializer->WriteBuffer((BYTE*)&m_eventsWritten, sizeof(m_eventsWritten));
 }
 
 EventPipeFile::~EventPipeFile()
@@ -29,6 +34,19 @@ EventPipeFile::~EventPipeFile()
     }
     CONTRACTL_END;
 
+    // Get the current stream label.
+    unsigned int currentStreamLabel = m_pSerializer->GetStreamLabel();
+
+    // Seek to the reserved event count location.
+    m_pSerializer->GoToStreamLabel(m_eventsWrittenStreamLabel);
+
+    // Write the event count.
+    m_pSerializer->WriteBuffer((BYTE*)&m_eventsWritten, sizeof(m_eventsWritten));
+
+    // Seek back to the current stream label.
+    m_pSerializer->GoToStreamLabel(currentStreamLabel);
+
+    // Close the serializer.
     if(m_pSerializer != NULL)
     {
         delete(m_pSerializer);
@@ -46,5 +64,7 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
     }
     CONTRACTL_END;
 
-    // TODO: Write it to the event buffer.
+    // Write the event to the stream.
+    instance.FastSerialize(m_pSerializer);
+    m_eventsWritten++;
 }

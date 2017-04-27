@@ -5,6 +5,7 @@
 #ifndef __FASTSERIALIZER_H__
 #define __FASTSERIALIZER_H__
 
+#include "fastserializableobject.h"
 #include "fstream.h"
 
 class FastSerializer;
@@ -28,24 +29,30 @@ enum class FastSerializerTags : BYTE
     Limit,              // Just past the last valid tag, used for asserts.  
 };
 
-// Callback used to allow the serializer to ask objects to serialize themselves.
-typedef void (*FastSerializerCallback)(FastSerializer *pSerializer, void *pObject);
-
 class FastSerializer
 {
 public:
 
-    FastSerializer(SString &outputFilePath);
+    FastSerializer(SString &outputFilePath, FastSerializableObject &object);
     ~FastSerializer();
 
-    void WriteObject(FastSerializerCallback pCallback, void *pObject);
+    unsigned int GetStreamLabel() const;
+    void GoToStreamLabel(unsigned int streamLabel);
+
+    void WriteObject(FastSerializableObject *pObject);
+    void WriteBuffer(BYTE *pBuffer, size_t length);
+    void WriteTag(FastSerializerTags tag, BYTE *payload = NULL, size_t payloadLength = 0);
+    void WriteString(const char *strContents, int length);
 
 private:
 
+    void WriteEntryObject();
+    void WriteSerializationType(FastSerializableObject *pObject);
     void WriteFileHeader();
-    void Write(SString &contents);
     CFileStream *m_pFileStream;
     bool m_writeErrorEncountered;
+    FastSerializableObject *m_pEntryObject;
+    size_t m_currentPos;
 };
 
 #endif // __FASTSERIALIZER_H__

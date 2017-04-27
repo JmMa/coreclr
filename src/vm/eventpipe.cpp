@@ -141,6 +141,12 @@ void EventPipe::Disable()
         s_pJsonFile = NULL;
     }
 
+    if(s_pFile != NULL)
+    {
+        delete(s_pFile);
+        s_pFile = NULL;
+    }
+
     if(s_pConfig != NULL)
     {
         delete(s_pConfig);
