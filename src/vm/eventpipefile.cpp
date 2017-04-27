@@ -16,6 +16,7 @@ EventPipeFile::EventPipeFile(SString &outputFilePath)
     CONTRACTL_END;
 
     m_pSerializer = new FastSerializer(outputFilePath, *this);
+    m_serializationLock.Init(LOCK_TYPE_DEFAULT);
     QueryPerformanceCounter(&m_fileOpenTimeStamp);
 
     // Write a forward reference to the beginning of the event stream.
@@ -57,6 +58,9 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    // Take the serialization lock.
+    SpinLockHolder _slh(&m_serializationLock);
 
     // Write the event to the stream.
     instance.FastSerialize(m_pSerializer);

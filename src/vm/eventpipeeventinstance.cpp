@@ -52,9 +52,35 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer)
     }
     CONTRACTL_END;
 
-    // TODO: Serialize the event using the serializer.
+    // TODO: Remove this.
     const unsigned int value = 0xDEADBEEF;
     pSerializer->WriteBuffer((BYTE*)&value, sizeof(value));
+
+    // Calculate the size of the total payload so that it can be written to the file.
+    unsigned int payloadLength =
+        // TODO: StreamLabel of the event's type information.
+        sizeof(m_threadID) +        // Thread ID
+        sizeof(m_timeStamp) +       // TimeStamp
+        m_dataLength +              // Event payload data length
+        m_stackContents.GetSize();  // Stack payload size
+
+    // Write the size of the event to the file.
+    pSerializer->WriteBuffer((BYTE*)&payloadLength, sizeof(payloadLength));
+
+    // Write the thread ID.
+    pSerializer->WriteBuffer((BYTE*)&m_threadID, sizeof(m_threadID));
+
+    // Write the timestamp.
+    pSerializer->WriteBuffer((BYTE*)&m_timeStamp, sizeof(m_timeStamp));
+
+    // Write the event data payload.
+    pSerializer->WriteBuffer(m_pData, m_dataLength);
+
+    // Write the stack if present.
+    if(m_stackContents.GetSize() > 0)
+    {
+        pSerializer->WriteBuffer(m_stackContents.GetPointer(), m_stackContents.GetSize());
+    }
 }
 
 void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)

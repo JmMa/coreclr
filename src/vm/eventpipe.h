@@ -99,6 +99,20 @@ public:
             m_nextAvailableFrame++;
         }
     }
+
+    BYTE* GetPointer() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (BYTE*)m_stackFrames;
+    }
+
+    size_t GetSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (m_nextAvailableFrame * sizeof(UINT_PTR));
+    }
 };
 
 class EventPipe

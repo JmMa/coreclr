@@ -45,6 +45,10 @@ class EventPipeFile : public FastSerializableObject
 
         // The forward reference index that marks the beginning of the event stream.
         unsigned int m_beginEventsForwardReferenceIndex;
+
+        // The serialization which is responsible for making sure only a single event
+        // or block of events gets written to the file at once.
+        SpinLock m_serializationLock;
 };
 
 #endif // __EVENTPIPE_FILE_H__
