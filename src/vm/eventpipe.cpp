@@ -124,6 +124,9 @@ void EventPipe::Disable()
     }
     CONTRACTL_END;
 
+    // Don't block GC during clean-up.
+    GCX_PREEMP();
+
     // Take the lock before disabling tracing.
     CrstHolder _crst(GetLock());
 

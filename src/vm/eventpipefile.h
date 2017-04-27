@@ -43,11 +43,8 @@ class EventPipeFile : public FastSerializableObject
         // The timestamp when the file was opened.  Used for calculating file-relative timestamps.
         LARGE_INTEGER m_fileOpenTimeStamp;
 
-        // The total count of written events.
-        ULONG m_eventsWritten;
-
-        // The position in the file where the count of events written will be written on close.
-        unsigned int m_eventsWrittenStreamLabel;
+        // The forward reference index that marks the beginning of the event stream.
+        unsigned int m_beginEventsForwardReferenceIndex;
 };
 
 #endif // __EVENTPIPE_FILE_H__

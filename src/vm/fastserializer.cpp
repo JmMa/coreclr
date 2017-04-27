@@ -18,6 +18,7 @@ FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &
     m_writeErrorEncountered = false;
     m_pEntryObject = &object;
     m_currentPos = 0;
+    m_nextForwardReference = 0;
     m_pFileStream = new CFileStream();
     if(FAILED(m_pFileStream->OpenForWrite(outputFilePath)))
     {
@@ -46,6 +47,12 @@ FastSerializer::~FastSerializer()
     // Write the end of the entry object.
     WriteTag(FastSerializerTags::EndObject);
 
+    // Write forward reference table.
+    StreamLabel forwardReferenceLabel = WriteForwardReferenceTable();
+
+    // Write trailer.
+    WriteTrailer(forwardReferenceLabel);
+
     if(m_pFileStream != NULL)
     {
         delete(m_pFileStream);
@@ -53,27 +60,11 @@ FastSerializer::~FastSerializer()
     }
 }
 
-unsigned int FastSerializer::GetStreamLabel() const
+StreamLabel FastSerializer::GetStreamLabel() const
 {
     LIMITED_METHOD_CONTRACT;
 
     return m_currentPos;
-}
-
-void FastSerializer::GoToStreamLabel(unsigned int streamLabel)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Seek to the stream label.
-    LARGE_INTEGER streamPos;
-    streamPos.QuadPart = streamLabel;
-    m_pFileStream->Seek(streamPos, STREAM_SEEK_SET, NULL);
 }
 
 void FastSerializer::WriteObject(FastSerializableObject *pObject)
@@ -163,6 +154,57 @@ void FastSerializer::WriteEntryObject()
     // The object is now initialized.  Fields or other objects can now be written.
 }
 
+unsigned int FastSerializer::AllocateForwardReference()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(m_nextForwardReference < MaxForwardReferences);
+    }
+    CONTRACTL_END;
+
+    // TODO: Handle failure.
+
+    // Save the index.
+    int index = m_nextForwardReference;
+
+    // Allocate the forward reference and zero-fill it so that the reader
+    // will know if it was not properly defined.
+    m_forwardReferences[m_nextForwardReference++] = 0;
+
+    return index;
+}
+
+void FastSerializer::DefineForwardReference(unsigned int index, StreamLabel value)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(index < MaxForwardReferences-1);
+    }
+    CONTRACTL_END;
+
+    m_forwardReferences[index] = value;
+}
+
+void FastSerializer::WriteForwardReference(unsigned int index)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(index < MaxForwardReferences-1);
+    }
+    CONTRACTL_END;
+
+    WriteBuffer((BYTE*)&index, sizeof(index));
+}
+
 void FastSerializer::WriteSerializationType(FastSerializableObject *pObject)
 {
     CONTRACTL
@@ -245,4 +287,47 @@ void FastSerializer::WriteString(const char *strContents, int length)
 
     // Write the string contents.
     WriteBuffer((BYTE*) strContents, length);
+}
+
+StreamLabel FastSerializer::WriteForwardReferenceTable()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    // Save the position of the start of the forward references table.
+    StreamLabel current = GetStreamLabel();
+
+    // Write the count of allocated references.
+    WriteBuffer((BYTE*) &m_nextForwardReference, sizeof(m_nextForwardReference));
+
+    // Write each of the allocated references.
+    WriteBuffer((BYTE*) m_forwardReferences, sizeof(StreamLabel) * m_nextForwardReference);
+
+    return current;
+}
+
+void FastSerializer::WriteTrailer(StreamLabel forwardReferencesTableStart)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    // Get the current location to mark the beginning of the trailer.
+    StreamLabel current = GetStreamLabel();
+
+    // Write the trailer, which contains the start of the forward references table.
+    WriteBuffer((BYTE*) &forwardReferencesTableStart, sizeof(forwardReferencesTableStart));
+
+    // Write the location of the trailer.  This is the final piece of data written to the file,
+    // so that it can be easily found by a reader that can seek to the end of the file.
+    WriteBuffer((BYTE*) &current, sizeof(current));
 }

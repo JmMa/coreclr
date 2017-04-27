@@ -10,6 +10,8 @@
 
 class FastSerializer;
 
+typedef unsigned int StreamLabel;
+
 enum class FastSerializerTags : BYTE 
 {
     Error,              // To improve debugabilty, 0 is an illegal tag.  
@@ -36,23 +38,33 @@ public:
     FastSerializer(SString &outputFilePath, FastSerializableObject &object);
     ~FastSerializer();
 
-    unsigned int GetStreamLabel() const;
-    void GoToStreamLabel(unsigned int streamLabel);
+    StreamLabel GetStreamLabel() const;
 
     void WriteObject(FastSerializableObject *pObject);
     void WriteBuffer(BYTE *pBuffer, size_t length);
     void WriteTag(FastSerializerTags tag, BYTE *payload = NULL, size_t payloadLength = 0);
     void WriteString(const char *strContents, int length);
 
+    unsigned int AllocateForwardReference();
+    void DefineForwardReference(unsigned int index, StreamLabel value);
+    void WriteForwardReference(unsigned int index);
+
 private:
 
     void WriteEntryObject();
     void WriteSerializationType(FastSerializableObject *pObject);
     void WriteFileHeader();
+    StreamLabel WriteForwardReferenceTable();
+    void WriteTrailer(StreamLabel forwardReferencesTableStart);
+
     CFileStream *m_pFileStream;
     bool m_writeErrorEncountered;
     FastSerializableObject *m_pEntryObject;
     size_t m_currentPos;
+
+    static const unsigned int MaxForwardReferences = 100;
+    StreamLabel m_forwardReferences[MaxForwardReferences];
+    unsigned int m_nextForwardReference;
 };
 
 #endif // __FASTSERIALIZER_H__

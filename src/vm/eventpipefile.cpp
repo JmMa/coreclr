@@ -17,11 +17,11 @@ EventPipeFile::EventPipeFile(SString &outputFilePath)
 
     m_pSerializer = new FastSerializer(outputFilePath, *this);
     QueryPerformanceCounter(&m_fileOpenTimeStamp);
-    m_eventsWritten = 0;
 
-    // Reserve enough space to write the event count.
-    m_eventsWrittenStreamLabel = m_pSerializer->GetStreamLabel();
-    m_pSerializer->WriteBuffer((BYTE*)&m_eventsWritten, sizeof(m_eventsWritten));
+    // Write a forward reference to the beginning of the event stream.
+    // This also allows readers to know where the event stream ends and skip it if needed.
+    m_beginEventsForwardReferenceIndex = m_pSerializer->AllocateForwardReference();
+    m_pSerializer->WriteForwardReference(m_beginEventsForwardReferenceIndex);
 }
 
 EventPipeFile::~EventPipeFile()
@@ -34,17 +34,11 @@ EventPipeFile::~EventPipeFile()
     }
     CONTRACTL_END;
 
-    // Get the current stream label.
-    unsigned int currentStreamLabel = m_pSerializer->GetStreamLabel();
+    // Mark the end of the event stream.
+    StreamLabel currentLabel = m_pSerializer->GetStreamLabel();
 
-    // Seek to the reserved event count location.
-    m_pSerializer->GoToStreamLabel(m_eventsWrittenStreamLabel);
-
-    // Write the event count.
-    m_pSerializer->WriteBuffer((BYTE*)&m_eventsWritten, sizeof(m_eventsWritten));
-
-    // Seek back to the current stream label.
-    m_pSerializer->GoToStreamLabel(currentStreamLabel);
+    // Define the event start forward reference.
+    m_pSerializer->DefineForwardReference(m_beginEventsForwardReferenceIndex, currentLabel);
 
     // Close the serializer.
     if(m_pSerializer != NULL)
@@ -66,5 +60,4 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
 
     // Write the event to the stream.
     instance.FastSerialize(m_pSerializer);
-    m_eventsWritten++;
 }
