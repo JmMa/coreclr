@@ -41,7 +41,28 @@ StackContents* EventPipeEventInstance::GetStack()
     return &m_stackContents;
 }
 
-void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer)
+EventPipeEvent* EventPipeEventInstance::GetEvent() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_pEvent;
+}
+
+BYTE* EventPipeEventInstance::GetData() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_pData;
+}
+
+size_t EventPipeEventInstance::GetLength() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_dataLength;
+}
+
+void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel)
 {
     CONTRACTL
     {
@@ -58,7 +79,7 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer)
 
     // Calculate the size of the total payload so that it can be written to the file.
     unsigned int payloadLength =
-        // TODO: StreamLabel of the event's type information.
+        sizeof(metadataLabel) +
         sizeof(m_threadID) +        // Thread ID
         sizeof(m_timeStamp) +       // TimeStamp
         m_dataLength +              // Event payload data length
@@ -66,6 +87,9 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer)
 
     // Write the size of the event to the file.
     pSerializer->WriteBuffer((BYTE*)&payloadLength, sizeof(payloadLength));
+
+    // Write the metadata label.
+    pSerializer->WriteBuffer((BYTE*)&metadataLabel, sizeof(metadataLabel));
 
     // Write the thread ID.
     pSerializer->WriteBuffer((BYTE*)&m_threadID, sizeof(m_threadID));

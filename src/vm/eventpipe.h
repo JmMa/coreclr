@@ -119,6 +119,7 @@ class EventPipe
 {
     // Declare friends.
     friend class EventPipeConfiguration;
+    friend class EventPipeFile;
     friend class EventPipeProvider;
     friend class SampleProfiler;
 
