@@ -5,6 +5,8 @@
 #ifndef __FASTSERIALIZER_H__
 #define __FASTSERIALIZER_H__
 
+#ifdef FEATURE_PERFTRACING
+
 #include "fastserializableobject.h"
 #include "fstream.h"
 
@@ -66,5 +68,7 @@ private:
     StreamLabel m_forwardReferences[MaxForwardReferences];
     unsigned int m_nextForwardReference;
 };
+
+#endif // FEATURE_PERFTRACING
 
 #endif // __FASTSERIALIZER_H__

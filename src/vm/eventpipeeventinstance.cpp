@@ -8,6 +8,8 @@
 #include "fastserializer.h"
 #include "sampleprofiler.h"
 
+#ifdef FEATURE_PERFTRACING
+
 EventPipeEventInstance::EventPipeEventInstance(
     EventPipeEvent &event,
     DWORD threadID,
@@ -143,3 +145,5 @@ SampleProfilerEventInstance::SampleProfilerEventInstance(Thread *pThread)
 {
     LIMITED_METHOD_CONTRACT;
 }
+
+#endif // FEATURE_PERFTRACING

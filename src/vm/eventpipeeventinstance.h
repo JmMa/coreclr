@@ -5,6 +5,8 @@
 #ifndef __EVENTPIPE_EVENTINSTANCE_H__
 #define __EVENTPIPE_EVENTINSTANCE_H__
 
+#ifdef FEATURE_PERFTRACING
+
 #include "eventpipe.h"
 #include "eventpipeevent.h"
 #include "fastserializableobject.h"
@@ -56,5 +58,7 @@ public:
 
     SampleProfilerEventInstance(Thread *pThread);
 };
+
+#endif // FEATURE_PERFTRACING
 
 #endif // __EVENTPIPE_EVENTINSTANCE_H__

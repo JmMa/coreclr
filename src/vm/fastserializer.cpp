@@ -5,6 +5,8 @@
 #include "common.h"
 #include "fastserializer.h"
 
+#ifdef FEATURE_PERFTRACING
+
 FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &object)
 {
     CONTRACTL
@@ -331,3 +333,5 @@ void FastSerializer::WriteTrailer(StreamLabel forwardReferencesTableStart)
     // so that it can be easily found by a reader that can seek to the end of the file.
     WriteBuffer((BYTE*) &current, sizeof(current));
 }
+
+#endif // FEATURE_PERFTRACING

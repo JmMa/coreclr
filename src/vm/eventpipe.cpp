@@ -15,6 +15,8 @@
 #include "pal.h"
 #endif // FEATURE_PAL
 
+#ifdef FEATURE_PERFTRACING
+
 CrstStatic EventPipe::s_configCrst;
 bool EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration* EventPipe::s_pConfig = NULL;
@@ -294,3 +296,5 @@ CrstStatic* EventPipe::GetLock()
 
     return &s_configCrst;
 }
+
+#endif // FEATURE_PERFTRACING

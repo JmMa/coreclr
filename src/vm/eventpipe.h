@@ -5,6 +5,8 @@
 #ifndef __EVENTPIPE_H__
 #define __EVENTPIPE_H__
 
+#ifdef FEATURE_PERFTRACING
+
 #include "crst.h"
 #include "stackwalk.h"
 
@@ -171,5 +173,7 @@ class EventPipe
         static EventPipeFile *s_pFile;
         static EventPipeJsonFile *s_pJsonFile;
 };
+
+#endif // FEATURE_PERFTRACING
 
 #endif // __EVENTPIPE_H__
