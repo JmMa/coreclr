@@ -33,7 +33,7 @@ public:
     void Disable();
 
     // Get the event used to write metadata to the event stream.
-    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEvent &sourceEvent, BYTE *pPayloadData = NULL, size_t payloadLength = 0);
+    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEvent &sourceEvent, BYTE *pPayloadData = NULL, unsigned int payloadLength = 0);
 
 private:
 

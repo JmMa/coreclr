@@ -41,9 +41,9 @@ public:
     StreamLabel GetStreamLabel() const;
 
     void WriteObject(FastSerializableObject *pObject);
-    void WriteBuffer(BYTE *pBuffer, size_t length);
-    void WriteTag(FastSerializerTags tag, BYTE *payload = NULL, size_t payloadLength = 0);
-    void WriteString(const char *strContents, int length);
+    void WriteBuffer(BYTE *pBuffer, unsigned int length);
+    void WriteTag(FastSerializerTags tag, BYTE *payload = NULL, unsigned int payloadLength = 0);
+    void WriteString(const char *strContents, unsigned int length);
 
     unsigned int AllocateForwardReference();
     void DefineForwardReference(unsigned int index, StreamLabel value);

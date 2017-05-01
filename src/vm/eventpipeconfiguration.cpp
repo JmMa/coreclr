@@ -177,7 +177,7 @@ void EventPipeConfiguration::Disable()
     }
 }
 
-EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPipeEvent &sourceEvent, BYTE *pPayloadData, size_t payloadLength)
+EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPipeEvent &sourceEvent, BYTE *pPayloadData, unsigned int payloadLength)
 {
     CONTRACTL
     {

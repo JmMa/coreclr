@@ -15,7 +15,7 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, size_t length);
+    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length);
 
     // Get the event associated with this instance.
     EventPipeEvent* GetEvent() const;
@@ -27,7 +27,7 @@ public:
     BYTE* GetData() const;
 
     // Get the length of the data.
-    size_t GetLength() const;
+    unsigned int GetLength() const;
 
     // Serialize this object using FastSerialization.
     void FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel);
@@ -42,7 +42,7 @@ protected:
     LARGE_INTEGER m_timeStamp;
 
     BYTE *m_pData;
-    size_t m_dataLength;
+    unsigned int m_dataLength;
     StackContents m_stackContents;
 };
 

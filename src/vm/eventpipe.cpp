@@ -158,7 +158,7 @@ void EventPipe::Disable()
     }
 }
 
-void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, size_t length)
+void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length)
 {
     CONTRACTL
     {

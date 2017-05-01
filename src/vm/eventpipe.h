@@ -107,7 +107,7 @@ public:
         return (BYTE*)m_stackFrames;
     }
 
-    size_t GetSize() const
+    unsigned int GetSize() const
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -142,7 +142,7 @@ class EventPipe
 
         // Write out an event.
         // Data is written as a serialized blob matching the ETW serialization conventions.
-        static void WriteEvent(EventPipeEvent &event, BYTE *pData, size_t length);
+        static void WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length);
 
         // Write out a sample profile event.
         static void WriteSampleProfileEvent(SampleProfilerEventInstance &instance);
